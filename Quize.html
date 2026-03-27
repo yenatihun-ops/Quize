@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="am">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>የቀላል ጥያቄና መልስ መተግበሪያ</title>
+    <style>
+        /* --- CSS (የገጹ ዲዛይን) --- */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .quiz-container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        #question {
+            font-size: 18px;
+            color: #34495e;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .answer-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background-color: #ecf0f1;
+            color: #333;
+            border: 2px solid #bdc3c7;
+            padding: 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        .btn.correct {
+            background-color: #2ecc71;
+            color: white;
+            border-color: #2ecc71;
+        }
+
+        .btn.wrong {
+            background-color: #e74c3c;
+            color: white;
+            border-color: #e74c3c;
+        }
+
+        #next-btn {
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            display: none; /* መጀመሪያ አይታይም */
+        }
+
+        #next-btn:hover {
+            background-color: #1a252f;
+        }
+
+        #result {
+            font-size: 20px;
+            font-weight: bold;
+            color: #27ae60;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container">
+    <h1>አጠቃላይ እውቀት Quiz</h1>
+    
+    <div id="quiz-area">
+        <div id="question">ጥያቄው እዚህ ጋር ይታያል...</div>
+        <div id="answer-buttons" class="answer-buttons">
+            </div>
+        <button id="next-btn">ቀጣይ ጥያቄ</button>
+    </div>
+
+    <div id="result">
+        <p>ኩይዙን ጨርሰዋል!</p>
+        <p id="score-text"></p>
+        <button onclick="location.reload()" class="btn">እንደገና ጀምር</button>
+    </div>
+</div>
+
+<script>
+    // --- JavaScript (የመተግበሪያው ተግባር) ---
+
+    // 1. የጥያቄዎች ዝርዝር (Array of Objects)
+    const questions = [
+        {
+            question: "የኢትዮጵያ ዋና ከተማ ማን ናት?",
+            answers: [
+                { text: "ጎንደር", correct: false },
+                { text: "አዲስ አበባ", correct: true },
+                { text: "ሀዋሳ", correct: false },
+                { text: "መቀሌ", correct: false }
+            ]
+        },
+        {
+            question: "በአለም ላይ ረጅሙ ወንዝ ማን ይባላል?",
+            answers: [
+                { text: "አባይ (ናይል)", correct: true },
+                { text: "አማዞን", correct: false },
+                { text: "ያንግትዜ", correct: false },
+                { text: "ሚሲሲፒ", correct: false }
+            ]
+        },
+        {
+            question: "የሰው ልጅ አካል ውስጥ ስንት አጥንቶች አሉ?",
+            answers: [
+                { text: "206", correct: true },
+                { text: "300", correct: false },
+                { text: "150", correct: false },
+                { text: "210", correct: false }
+            ]
+        }
+    ];
+
+    // 2. አስፈላጊ የHTML ኤለመንቶችን መምረጥ
+    const questionElement = document.getElementById("question");
+    const answerButtons = document.getElementById("answer-buttons");
+    const nextButton = document.getElementById("next-btn");
+    const quizArea = document.getElementById("quiz-area");
+    const resultArea = document.getElementById("result");
+    const scoreText = document.getElementById("score-text");
+
+    // 3. የመተግበሪያው ሁኔታ (State)
+    let currentQuestionIndex = 0;
+    let score = 0;
+
+    // 4. ኩይዙን የሚጀምር ተግባር (Function)
+    function startQuiz() {
+        currentQuestionIndex = 0;
+        score = 0;
+        nextButton.innerHTML = "ቀጣይ ጥያቄ";
+        resultArea.style.display = "none";
+        quizArea.style.display = "block";
+        showQuestion();
+    }
+
+    // 5. ጥያቄውን እና መልሶቹን የሚያሳይ ተግባር
+    function showQuestion() {
+        resetState();
+        let currentQuestion = questions[currentQuestionIndex];
+        let questionNo = currentQuestionIndex + 1;
+        questionElement.innerHTML = questionNo + ". " + currentQuestion.question;
+
+        // ለእያንዳንዱ መልስ በተን (Button) መፍጠር
+        currentQuestion.answers.forEach(answer => {
+            const button = document.createElement("button");
+            button.innerHTML = answer.text;
+            button.classList.add("btn");
+            answerButtons.appendChild(button);
+            if(answer.correct){
+                button.dataset.correct = answer.correct;
+            }
+            button.addEventListener("click", selectAnswer);
+        });
+    }
+
+    // 6. የድሮ በተኖችን የሚያጠፋ ተግባር
+    function resetState() {
+        nextButton.style.display = "none";
+        while(answerButtons.firstChild){
+            answerButtons.removeChild(answerButtons.firstChild);
+        }
+    }
+
+    // 7. ተጠቃሚው መልስ ሲመርጥ የሚሰራ ተግባር
+    function selectAnswer(e) {
+        const selectedBtn = e.target;
+        const isCorrect = selectedBtn.dataset.correct === "true";
+        if(isCorrect){
+            selectedBtn.classList.add("correct");
+            score++;
+        } else {
+            selectedBtn.classList.add("wrong");
+        }
+        // ሁሉንም በተኖች ማሰናከል (Disable) እና ትክክለኛውን ማሳየት
+        Array.from(answerButtons.children).forEach(button => {
+            if(button.dataset.correct === "true"){
+                button.classList.add("correct");
+            }
+            button.disabled = true;
+        });
+        nextButton.style.display = "block";
+    }
+
+    // 8. "ቀጣይ" በተን ሲጫን የሚሰራ ተግባር
+    function handleNextButton() {
+        currentQuestionIndex++;
+        if(currentQuestionIndex < questions.length){
+            showQuestion();
+        } else {
+            showScore();
+        }
+    }
+
+    // 9. ውጤቱን የሚያሳይ ተግባር
+    function showScore() {
+        resetState();
+        quizArea.style.display = "none";
+        resultArea.style.display = "block";
+        scoreText.innerHTML = `ከ ${questions.length} ጥያቄዎች ውስጥ ${score} መልሰዋል።`;
+    }
+
+    nextButton.addEventListener("click", handleNextButton);
+
+    // ኩይዙን ጀምር
+    startQuiz();
+
+</script>
+
+</body>
+</html>
